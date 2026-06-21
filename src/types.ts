@@ -125,8 +125,16 @@ export interface VerifyAccountParams {
   metadata?: Record<string, unknown>;
 }
 
+/** One side (buy or sell) of a rate quote. */
 export interface Rate {
+  /** Achievable rate (fiat per crypto), as a decimal string. */
   rate: string;
+  /** Providers backing this quote. */
+  providerIds: string[];
+  /** Order flow type for this quote. */
+  orderType: string;
+  /** Refund window in minutes. */
+  refundTimeoutMinutes: number;
 }
 
 export interface RatesResponse {
@@ -135,33 +143,214 @@ export interface RatesResponse {
 }
 
 export interface RateParams {
+  /** Blockchain network, e.g. "base", "ethereum", "polygon". */
   network: string;
-  /** Token symbol being sold, e.g. "USDT". */
+  /** Fiat code or token symbol being converted from, e.g. "USDT". */
   from: string;
-  /** Amount, as a decimal string. */
+  /** Token notional, or amount in the `from` fiat, as a decimal string. */
   amount: string;
-  /** Fiat currency code, e.g. "NGN". */
+  /** Fiat code or token symbol being converted to, e.g. "NGN". */
   to: string;
+  /** Limit to one side; both are returned when omitted. */
   side?: "buy" | "sell";
+  /** Disambiguate `from` when it matches both a fiat and a token. */
+  fromSource?: "fiat" | "crypto";
+  /** Disambiguate `to` when it matches both a fiat and a token. */
+  toSource?: "fiat" | "crypto";
+  /** Pin the quote to a single provider (8 alphabetic chars). */
   providerId?: string;
 }
 
 export interface Currency {
+  /** ISO 4217 code, e.g. "NGN". */
   code: string;
   name: string;
-  shortName?: string;
-  symbol?: string;
+  shortName: string;
+  decimals: number;
+  symbol: string;
+  /** Reference market buy rate, as a decimal string. */
+  marketBuyRate: string;
+  /** Reference market sell rate, as a decimal string. */
+  marketSellRate: string;
 }
 
 export interface Institution {
   name: string;
+  /** SWIFT code, or a Paycrest code ending in `PC`. */
   code: string;
-  type?: string;
+  type: string;
 }
 
 export interface Token {
   symbol: string;
   contractAddress: string;
-  network: string;
   decimals: number;
+  baseCurrency: string;
+  network: string;
+}
+
+export interface ListTokensParams {
+  /** Filter by blockchain network, e.g. "base". */
+  network?: string;
+}
+
+/** A statistic reported over rolling windows. */
+export interface WindowedStat<T> {
+  "24h": T;
+  "7d": T;
+  "30d": T;
+  all: T;
+}
+
+export interface MarketAggregates {
+  settledVolumeUsd: WindowedStat<string>;
+  settledTxns: WindowedStat<number>;
+  networkSuccessPercent: WindowedStat<number | null>;
+  medianDeliverySecs: WindowedStat<number | null>;
+  activeProviders: WindowedStat<number>;
+  activeSenders: WindowedStat<number>;
+  /** Total available liquidity, as a decimal string. */
+  liveLiquidityUsd: string;
+  /** Distinct token/fiat pairs. */
+  corridors: number;
+  tokens: number;
+  networks: number;
+}
+
+/** One provider quote row in the orderbook. */
+export interface MarketBookEntry {
+  providerId: string;
+  /** "sell" (offramp) or "buy" (onramp). */
+  side: "sell" | "buy";
+  token: string;
+  fiat: string;
+  network: string;
+  /** Exchange rate, as a decimal string. */
+  rate: string;
+  rateType: "fixed" | "floating";
+  /** Minimum order amount, as a decimal string. */
+  min: string;
+  /** Maximum order amount, as a decimal string. */
+  max: string;
+  /** Available liquidity, as a decimal string. */
+  balance: string;
+  /** Fiat code (sell) or token symbol (buy). */
+  balanceCurrency: string;
+  /** USD-normalized balance, as a decimal string. */
+  balanceUsd: string;
+  /** Total settled orders for the corridor. */
+  settled: number;
+  successPercent: string | null;
+}
+
+export interface MarketsResponse {
+  /** ISO-8601 generation timestamp. */
+  asOf: string;
+  aggregates: MarketAggregates;
+  book: MarketBookEntry[];
+}
+
+export interface ReindexResponse {
+  events: Record<string, unknown>;
+}
+
+// --- Provider API ---
+
+export type OrderDirection = "offramp" | "onramp";
+
+export type ProviderOrderType = "regular" | "otc";
+
+/** Provider-side order lifecycle status (wider than the sender's). */
+export type ProviderOrderStatus =
+  | "initiated"
+  | "deposited"
+  | "pending"
+  | "fulfilling"
+  | "fulfilled"
+  | "validated"
+  | "settling"
+  | "settled"
+  | "cancelled"
+  | "refunding"
+  | "refunded"
+  | "expired";
+
+/** A provider order as returned by the provider endpoints. */
+export interface ProviderOrder {
+  id: string;
+  status: ProviderOrderStatus;
+  orderType: ProviderOrderType;
+  direction: OrderDirection;
+  createdAt: string;
+  updatedAt: string;
+  amount: string;
+  amountInUsd: string;
+  amountPaid: string;
+  amountReturned: string;
+  percentSettled: string;
+  rate: string;
+  senderFee: string;
+  senderFeePercent: string;
+  transactionFee: string;
+  reference?: string;
+  txHash?: string;
+  providerAccount?: ProviderAccount;
+  source?: OrderEndpoint;
+  destination?: OrderEndpoint;
+}
+
+/** Where the provider's effective rate sits against the public benchmark. */
+export interface ProviderRatePosition {
+  bestPublicRate: string;
+  yourEffectiveRate: string;
+  deltaVsBest: string;
+}
+
+export interface ProviderRateSide {
+  marketRate: string;
+  minimumRate: string;
+  maximumRate: string;
+  /** Omitted when no public benchmark exists for the corridor. */
+  position?: ProviderRatePosition;
+}
+
+export interface ProviderMarketRate {
+  buy?: ProviderRateSide;
+  sell?: ProviderRateSide;
+}
+
+export interface ProviderStatsParams {
+  /** Fiat currency code, e.g. "NGN". Required. */
+  currency: string;
+  direction?: OrderDirection;
+}
+
+export interface ProviderStats {
+  totalOrders: number;
+  totalFiatVolume: string;
+  totalCryptoVolume: string;
+}
+
+export interface ListProviderOrdersParams extends Pagination {
+  /** Fiat currency code, e.g. "NGN". Required. */
+  currency: string;
+  status?: ProviderOrderStatus;
+  /** Sort order. Defaults to "desc". */
+  ordering?: "asc" | "desc";
+  direction?: OrderDirection;
+  /** Match by order ID, reference, or account identifier. */
+  search?: string;
+  /** Set to "csv" to export; requires `from` and `to`. */
+  export?: "csv";
+  /** YYYY-MM-DD; required with `export=csv`. */
+  from?: string;
+  /** YYYY-MM-DD; required with `export=csv`. */
+  to?: string;
+}
+
+export interface PaginatedProviderOrders {
+  total: number;
+  page: number;
+  pageSize: number;
+  orders: ProviderOrder[];
 }

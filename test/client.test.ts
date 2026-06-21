@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { PaycrestClient } from "../src/index.js";
-import { PaycrestApiError, PaycrestError } from "../src/errors.js";
+import { PaycrestClient } from "../src";
+import { PaycrestApiError, PaycrestError } from "../src";
 
 function mockFetch(status: number, body: unknown): typeof fetch {
   return vi.fn(async () =>

@@ -1,5 +1,6 @@
 import { HttpClient, type HttpClientOptions } from "./http.js";
 import { GeneralResource } from "./resources/general.js";
+import { ProviderResource } from "./resources/provider.js";
 import { SenderResource } from "./resources/sender.js";
 
 export interface PaycrestClientOptions extends HttpClientOptions {
@@ -19,6 +20,7 @@ export interface PaycrestClientOptions extends HttpClientOptions {
  */
 export class PaycrestClient {
   readonly sender: SenderResource;
+  readonly provider: ProviderResource;
   readonly general: GeneralResource;
   readonly apiSecret?: string;
 
@@ -28,6 +30,7 @@ export class PaycrestClient {
     this.http = new HttpClient(options);
     this.apiSecret = options.apiSecret;
     this.sender = new SenderResource(this.http);
+    this.provider = new ProviderResource(this.http);
     this.general = new GeneralResource(this.http);
   }
 }

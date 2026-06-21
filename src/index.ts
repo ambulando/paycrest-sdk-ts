@@ -5,6 +5,7 @@ export { HttpClient } from "./http.js";
 export type { HttpClientOptions, RequestOptions } from "./http.js";
 
 export { SenderResource } from "./resources/sender.js";
+export { ProviderResource } from "./resources/provider.js";
 export { GeneralResource } from "./resources/general.js";
 
 export {

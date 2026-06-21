@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { constructEvent, verifySignature } from "../src/webhooks.js";
-import { PaycrestSignatureError } from "../src/errors.js";
+import { constructEvent, verifySignature } from "../src";
+import { PaycrestSignatureError } from "../src";
 
 const secret = "test-secret";
 
