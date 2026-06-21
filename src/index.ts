@@ -13,7 +13,7 @@ export {
   verifySignature,
   SIGNATURE_HEADER,
 } from "./webhooks.js";
-export type { WebhookEvent } from "./webhooks.js";
+export type { WebhookEvent, WebhookEventName } from "./webhooks.js";
 
 export {
   PaycrestError,

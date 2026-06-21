@@ -30,20 +30,41 @@ export type OrderType = "crypto" | "fiat";
 
 export type AmountIn = "crypto" | "fiat";
 
-/**
- * Order lifecycle status. Webhook events are emitted as
- * `payment_order.<status>`.
- */
+/** Direction of an order. */
+export type OrderDirection = "offramp" | "onramp";
+
+/** Order flow type. */
+export type PaymentOrderType = "regular" | "otc";
+
+/** Canonical payment-order lifecycle status. */
 export type OrderStatus =
   | "initiated"
   | "deposited"
   | "pending"
+  | "fulfilling"
+  | "fulfilled"
   | "validated"
   | "settling"
   | "settled"
+  | "cancelled"
   | "refunding"
   | "refunded"
   | "expired";
+
+/** Bank/mobile-money account details (recipient or refund account). */
+export interface Recipient {
+  institution: string;
+  accountIdentifier: string;
+  accountName: string;
+  memo?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Crypto recipient (onramp destination). */
+export interface CryptoRecipient {
+  address: string;
+  network: string;
+}
 
 /** Source/destination leg of an order. */
 export interface OrderEndpoint {
@@ -52,22 +73,18 @@ export interface OrderEndpoint {
   currency: string;
   /** Blockchain network, e.g. "base", "polygon" (crypto legs). */
   network?: string;
-  /** Recipient address (crypto destination). */
-  address?: string;
-  /** Recipient details (fiat destination). */
-  recipient?: Recipient;
+  /** ISO 3166-1 alpha-2 country code (fiat legs). */
+  country?: string;
+  /** Pin to a specific provider (destination legs). */
+  providerId?: string;
+  /** Recipient KYC data (fiat destination). */
+  kyc?: Record<string, unknown>;
+  /** Recipient details — fiat (bank/mobile) or crypto ({address, network}). */
+  recipient?: Recipient | CryptoRecipient;
   /** Refund address (crypto source). */
   refundAddress?: string;
   /** Refund account (fiat source). */
-  refundAccount?: string;
-}
-
-export interface Recipient {
-  institution: string;
-  accountIdentifier: string;
-  accountName: string;
-  memo?: string;
-  metadata?: Record<string, unknown>;
+  refundAccount?: Recipient;
 }
 
 export interface CreateOrderParams {
@@ -79,44 +96,185 @@ export interface CreateOrderParams {
   destination: OrderEndpoint;
   /** Exchange rate (fiat per crypto token), as a decimal string. */
   rate?: string;
-  /** Sender fee percent, as a decimal string. */
+  /** Fixed sender fee in crypto units, as a decimal string. */
+  senderFee?: string;
+  /** Percentage-based sender fee alternative, as a decimal string. */
   senderFeePercent?: string;
   /** Your internal order identifier. */
   reference?: string;
 }
 
 export interface ProviderAccount {
+  /** Crypto provider account (offramp). */
+  network?: string;
   receiveAddress?: string;
+  /** Fiat provider account (onramp). */
+  institution?: string;
   accountIdentifier?: string;
   accountName?: string;
+  amountToTransfer?: string;
+  currency?: string;
   /** ISO-8601 timestamp after which the account is no longer valid. */
   validUntil?: string;
 }
 
-export interface Order {
+/** Response from creating an order. Note: uses `timestamp`, not created/updated. */
+export interface CreateOrderResponse {
   id: string;
   status: OrderStatus;
+  orderType: PaymentOrderType;
+  timestamp: string;
   amount: string;
-  rate?: string;
-  senderFee?: string;
-  transactionFee?: string;
+  rate: string;
+  senderFee: string;
+  senderFeePercent: string;
+  transactionFee: string;
   reference?: string;
-  source: OrderEndpoint;
-  destination: OrderEndpoint;
   providerAccount?: ProviderAccount;
-  createdAt?: string;
-  updatedAt?: string;
+  source?: OrderEndpoint;
+  destination?: OrderEndpoint;
+}
+
+/** Canonical payment order, as returned by sender and provider list/get. */
+export interface PaymentOrder {
+  id: string;
+  status: OrderStatus;
+  orderType: PaymentOrderType;
+  direction: OrderDirection;
+  createdAt: string;
+  updatedAt: string;
+  amount: string;
+  amountInUsd: string;
+  amountPaid: string;
+  amountReturned: string;
+  percentSettled: string;
+  rate: string;
+  senderFee: string;
+  senderFeePercent: string;
+  transactionFee: string;
+  reference?: string;
+  txHash?: string;
+  providerAccount?: ProviderAccount;
+  source?: OrderEndpoint;
+  destination?: OrderEndpoint;
 }
 
 export interface ListOrdersParams extends Pagination {
   status?: OrderStatus;
+  direction?: OrderDirection;
 }
 
 export interface PaginatedOrders {
-  orders: Order[];
   total: number;
   page: number;
   pageSize: number;
+  orders: PaymentOrder[];
+}
+
+export interface SenderStatsParams {
+  direction?: OrderDirection;
+}
+
+export interface SenderStats {
+  totalOrders: number;
+  totalOrderVolume: string;
+  totalFeeEarnings: string;
+}
+
+// --- Order status by Gateway ID (onchain) ---
+
+export interface OrderSettlement {
+  splitOrderId: string;
+  amount: string;
+  rate: string;
+  orderPercent: string;
+}
+
+export interface OrderTxReceipt {
+  status: string;
+  txHash: string;
+  timestamp: string;
+}
+
+export interface LockOrderStatus {
+  orderId: string;
+  amount: string;
+  amountInUsd: string;
+  token: string;
+  network: string;
+  settlePercent: string;
+  status: string;
+  txHash: string;
+  settlements: OrderSettlement[];
+  txReceipts: OrderTxReceipt[];
+  updatedAt: string;
+}
+
+// --- Webhook deliveries ---
+
+export type WebhookDeliveryStatus = "pending" | "success" | "failed" | "expired";
+
+export type WebhookTrigger =
+  | "automatic"
+  | "cron_retry"
+  | "manual_sync"
+  | "manual_async";
+
+export interface WebhookDeliverySummary {
+  id: string;
+  event: string;
+  eventId: string;
+  orderId: string;
+  status: WebhookDeliveryStatus;
+  trigger: WebhookTrigger;
+  httpStatusCode: number;
+  attemptNumber: number;
+  destinationUrl: string;
+  signature: string;
+  errorMessage: string;
+  durationMs: number;
+  nextRetryTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A single delivery record, including the frozen payload and response. */
+export interface WebhookDelivery extends WebhookDeliverySummary {
+  requestPayload: Record<string, unknown>;
+  /** Captured response body, truncated to 4KB. */
+  responseBody: string;
+}
+
+export interface ListWebhookDeliveriesParams extends Pagination {
+  status?: WebhookDeliveryStatus;
+  event?: string;
+  eventId?: string;
+  orderId?: string;
+  /** ISO-8601; deliveries created at or after this timestamp. */
+  from?: string;
+  /** ISO-8601; deliveries created at or before this timestamp. */
+  to?: string;
+}
+
+export interface PaginatedWebhookDeliveries {
+  total: number;
+  page: number;
+  pageSize: number;
+  deliveries: WebhookDeliverySummary[];
+}
+
+/** Inline result of a synchronous webhook replay. */
+export interface WebhookRetryResult {
+  id: string;
+  status: "success" | "failed";
+  httpStatusCode: number;
+  durationMs: number;
+  errorMessage: string;
+}
+
+/** Acknowledgement of an async (queued) webhook replay. */
+export interface WebhookRetryQueued {
+  id: string;
 }
 
 export interface VerifyAccountParams {
@@ -256,49 +414,6 @@ export interface ReindexResponse {
 
 // --- Provider API ---
 
-export type OrderDirection = "offramp" | "onramp";
-
-export type ProviderOrderType = "regular" | "otc";
-
-/** Provider-side order lifecycle status (wider than the sender's). */
-export type ProviderOrderStatus =
-  | "initiated"
-  | "deposited"
-  | "pending"
-  | "fulfilling"
-  | "fulfilled"
-  | "validated"
-  | "settling"
-  | "settled"
-  | "cancelled"
-  | "refunding"
-  | "refunded"
-  | "expired";
-
-/** A provider order as returned by the provider endpoints. */
-export interface ProviderOrder {
-  id: string;
-  status: ProviderOrderStatus;
-  orderType: ProviderOrderType;
-  direction: OrderDirection;
-  createdAt: string;
-  updatedAt: string;
-  amount: string;
-  amountInUsd: string;
-  amountPaid: string;
-  amountReturned: string;
-  percentSettled: string;
-  rate: string;
-  senderFee: string;
-  senderFeePercent: string;
-  transactionFee: string;
-  reference?: string;
-  txHash?: string;
-  providerAccount?: ProviderAccount;
-  source?: OrderEndpoint;
-  destination?: OrderEndpoint;
-}
-
 /** Where the provider's effective rate sits against the public benchmark. */
 export interface ProviderRatePosition {
   bestPublicRate: string;
@@ -334,7 +449,7 @@ export interface ProviderStats {
 export interface ListProviderOrdersParams extends Pagination {
   /** Fiat currency code, e.g. "NGN". Required. */
   currency: string;
-  status?: ProviderOrderStatus;
+  status?: OrderStatus;
   /** Sort order. Defaults to "desc". */
   ordering?: "asc" | "desc";
   direction?: OrderDirection;
@@ -346,11 +461,4 @@ export interface ListProviderOrdersParams extends Pagination {
   from?: string;
   /** YYYY-MM-DD; required with `export=csv`. */
   to?: string;
-}
-
-export interface PaginatedProviderOrders {
-  total: number;
-  page: number;
-  pageSize: number;
-  orders: ProviderOrder[];
 }

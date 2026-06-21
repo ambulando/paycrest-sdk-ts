@@ -1,14 +1,25 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { PaycrestSignatureError } from "./errors.js";
-import type { Order, OrderStatus } from "./types.js";
+import type { PaymentOrder } from "./types.js";
 
 /** Header carrying the HMAC-SHA256 signature on incoming webhooks. */
 export const SIGNATURE_HEADER = "x-paycrest-signature";
 
+/** Webhook event names emitted by Paycrest. */
+export type WebhookEventName =
+  | "payment_order.deposited"
+  | "payment_order.pending"
+  | "payment_order.validated"
+  | "payment_order.settling"
+  | "payment_order.settled"
+  | "payment_order.refunding"
+  | "payment_order.refunded"
+  | "payment_order.expired";
+
 export interface WebhookEvent {
   /** e.g. "payment_order.settled". */
-  event: `payment_order.${OrderStatus}`;
-  data: Order;
+  event: WebhookEventName;
+  data: PaymentOrder;
 }
 
 /**

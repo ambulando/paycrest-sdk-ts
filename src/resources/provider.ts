@@ -1,9 +1,9 @@
 import type { HttpClient } from "../http.js";
 import type {
   ListProviderOrdersParams,
-  PaginatedProviderOrders,
+  PaginatedOrders,
+  PaymentOrder,
   ProviderMarketRate,
-  ProviderOrder,
   ProviderStats,
   ProviderStatsParams,
 } from "../types.js";
@@ -19,10 +19,8 @@ export class ProviderResource {
    * List orders assigned to the provider. `GET /provider/orders`
    * `currency` is required; supports filtering, pagination, and CSV export.
    */
-  listOrders(
-    params: ListProviderOrdersParams,
-  ): Promise<PaginatedProviderOrders> {
-    return this.http.request<PaginatedProviderOrders>("/provider/orders", {
+  listOrders(params: ListProviderOrdersParams): Promise<PaginatedOrders> {
+    return this.http.request<PaginatedOrders>("/provider/orders", {
       query: {
         currency: params.currency,
         page: params.page,
@@ -39,8 +37,8 @@ export class ProviderResource {
   }
 
   /** Retrieve a single assigned order by id. `GET /provider/orders/{id}` */
-  getOrder(orderId: string): Promise<ProviderOrder> {
-    return this.http.request<ProviderOrder>(`/provider/orders/${orderId}`);
+  getOrder(orderId: string): Promise<PaymentOrder> {
+    return this.http.request<PaymentOrder>(`/provider/orders/${orderId}`);
   }
 
   /**
