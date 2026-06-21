@@ -1,4 +1,4 @@
-# @paycrest/sdk
+# @ambulando/paycrest-sdk
 
 TypeScript SDK for the [Paycrest API](https://docs.paycrest.io). Covers the
 Sender integration: creating and tracking payment orders (on/off-ramp),
@@ -10,7 +10,7 @@ fetching public rates, verifying recipient accounts, and verifying webhooks.
 ## Install
 
 ```bash
-npm install @paycrest/sdk
+npm install @ambulando/paycrest-sdk
 ```
 
 Requires Node.js 18+ (uses the global `fetch` and `node:crypto`).
@@ -18,7 +18,7 @@ Requires Node.js 18+ (uses the global `fetch` and `node:crypto`).
 ## Usage
 
 ```ts
-import { PaycrestClient } from "@paycrest/sdk";
+import { PaycrestClient } from "@ambulando/paycrest-sdk";
 
 const client = new PaycrestClient({
   apiKey: process.env.PAYCREST_API_KEY,
@@ -61,7 +61,7 @@ const rates = await client.general.getRates({
 Verify the `X-Paycrest-Signature` header against the **raw** request body:
 
 ```ts
-import { constructEvent } from "@paycrest/sdk";
+import { constructEvent } from "@ambulando/paycrest-sdk";
 
 const event = constructEvent(rawBody, signature, process.env.PAYCREST_API_SECRET!);
 if (event.event === "payment_order.settled") {
