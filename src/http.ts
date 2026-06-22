@@ -3,6 +3,7 @@ import {
   PaycrestError,
   PaycrestRateLimitError,
 } from "./errors.js";
+import { safeParseJson } from "./json.js";
 import type { ApiErrorResponse, ApiResponse } from "./types.js";
 
 export interface HttpClientOptions {
@@ -46,7 +47,10 @@ export class HttpClient {
     }
   }
 
-  async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  async request<T>(
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<ApiResponse<T>> {
     const { method = "GET", query, body, auth = true } = options;
 
     if (auth && !this.apiKey) {
@@ -90,7 +94,7 @@ export class HttpClient {
     }
 
     const text = await response.text();
-    const parsed = text ? safeJsonParse(text) : undefined;
+    const parsed = text ? safeParseJson(text) : undefined;
 
     if (!response.ok) {
       const errorBody = (parsed as ApiErrorResponse | undefined) ?? text;
@@ -100,16 +104,9 @@ export class HttpClient {
 
     // Successful responses are wrapped in { status, message, data }.
     if (parsed && typeof parsed === "object" && "data" in parsed) {
-      return (parsed as ApiResponse<T>).data;
+      return parsed as ApiResponse<T>;
     }
-    return parsed as T;
-  }
-}
-
-function safeJsonParse(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
+    // Wrap bare payloads so callers always receive a consistent envelope.
+    return { status: "success", message: "", data: parsed as T };
   }
 }

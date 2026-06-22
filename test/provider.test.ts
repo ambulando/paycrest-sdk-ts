@@ -34,7 +34,7 @@ describe("provider endpoints", () => {
       direction: "offramp",
       ordering: "asc",
     });
-    expect(res.orders[0]!.id).toBe("o1");
+    expect(res.data.orders[0]!.id).toBe("o1");
     const url = urlOf(fetch);
     expect(url).toContain("/provider/orders");
     expect(url).toContain("currency=NGN");
@@ -47,7 +47,7 @@ describe("provider endpoints", () => {
     const fetch = mockFetch(200, ok({ id: "abc", status: "fulfilled" }));
     const client = new PaycrestClient({ apiKey, fetch });
     const order = await client.provider.getOrder("abc");
-    expect(order.status).toBe("fulfilled");
+    expect(order.data.status).toBe("fulfilled");
     expect(urlOf(fetch)).toContain("/provider/orders/abc");
   });
 
@@ -55,7 +55,7 @@ describe("provider endpoints", () => {
     const fetch = mockFetch(200, ok({ sell: { marketRate: "1500" } }));
     const client = new PaycrestClient({ apiKey, fetch });
     const rate = await client.provider.getMarketRate("USDT", "NGN");
-    expect(rate.sell?.marketRate).toBe("1500");
+    expect(rate.data.sell?.marketRate).toBe("1500");
     expect(urlOf(fetch)).toContain("/provider/rates/USDT/NGN");
   });
 
@@ -69,7 +69,7 @@ describe("provider endpoints", () => {
       currency: "KES",
       direction: "onramp",
     });
-    expect(stats.totalOrders).toBe(5);
+    expect(stats.data.totalOrders).toBe(5);
     const url = urlOf(fetch);
     expect(url).toContain("/provider/stats");
     expect(url).toContain("currency=KES");
@@ -80,7 +80,7 @@ describe("provider endpoints", () => {
     const fetch = mockFetch(200, ok({ version: "1.0" }));
     const client = new PaycrestClient({ apiKey, fetch });
     const info = await client.provider.getNodeInfo();
-    expect(info.version).toBe("1.0");
+    expect(info.data.version).toBe("1.0");
     expect(urlOf(fetch)).toContain("/provider/node-info");
   });
 

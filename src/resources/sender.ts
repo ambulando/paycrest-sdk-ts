@@ -1,5 +1,6 @@
 import type { HttpClient } from "../http.js";
 import type {
+  ApiResponse,
   CreateOrderParams,
   CreateOrderResponse,
   ListOrdersParams,
@@ -20,7 +21,9 @@ export class SenderResource {
   constructor(private readonly http: HttpClient) {}
 
   /** Create a payment order. `POST /sender/orders` */
-  createOrder(params: CreateOrderParams): Promise<CreateOrderResponse> {
+  createOrder(
+    params: CreateOrderParams,
+  ): Promise<ApiResponse<CreateOrderResponse>> {
     return this.http.request<CreateOrderResponse>("/sender/orders", {
       method: "POST",
       body: params,
@@ -28,7 +31,9 @@ export class SenderResource {
   }
 
   /** List orders with optional filtering and pagination. `GET /sender/orders` */
-  listOrders(params: ListOrdersParams = {}): Promise<PaginatedOrders> {
+  listOrders(
+    params: ListOrdersParams = {},
+  ): Promise<ApiResponse<PaginatedOrders>> {
     return this.http.request<PaginatedOrders>("/sender/orders", {
       query: {
         status: params.status,
@@ -40,12 +45,14 @@ export class SenderResource {
   }
 
   /** Retrieve a single order by id. `GET /sender/orders/{id}` */
-  getOrder(orderId: string): Promise<PaymentOrder> {
+  getOrder(orderId: string): Promise<ApiResponse<PaymentOrder>> {
     return this.http.request<PaymentOrder>(`/sender/orders/${orderId}`);
   }
 
   /** Fetch sender statistics. `GET /sender/stats` */
-  getStats(params: SenderStatsParams = {}): Promise<SenderStats> {
+  getStats(
+    params: SenderStatsParams = {},
+  ): Promise<ApiResponse<SenderStats>> {
     return this.http.request<SenderStats>("/sender/stats", {
       query: { direction: params.direction },
     });
@@ -58,7 +65,7 @@ export class SenderResource {
   getOrderStatusByGatewayId(
     chainId: string | number,
     orderId: string,
-  ): Promise<LockOrderStatus> {
+  ): Promise<ApiResponse<LockOrderStatus>> {
     return this.http.request<LockOrderStatus>(
       `/orders/${chainId}/${orderId}`,
       { auth: false },
@@ -68,7 +75,7 @@ export class SenderResource {
   /** List webhook deliveries, newest first. `GET /sender/webhooks` */
   listWebhookDeliveries(
     params: ListWebhookDeliveriesParams = {},
-  ): Promise<PaginatedWebhookDeliveries> {
+  ): Promise<ApiResponse<PaginatedWebhookDeliveries>> {
     return this.http.request<PaginatedWebhookDeliveries>("/sender/webhooks", {
       query: {
         status: params.status,
@@ -87,7 +94,9 @@ export class SenderResource {
    * Get a single webhook delivery, including the frozen `requestPayload` and
    * captured `responseBody`. `GET /sender/webhooks/{id}`
    */
-  getWebhookDelivery(deliveryId: string): Promise<WebhookDelivery> {
+  getWebhookDelivery(
+    deliveryId: string,
+  ): Promise<ApiResponse<WebhookDelivery>> {
     return this.http.request<WebhookDelivery>(
       `/sender/webhooks/${deliveryId}`,
     );
@@ -104,7 +113,7 @@ export class SenderResource {
   retryWebhookDelivery(
     deliveryId: string,
     options: { sync?: boolean } = {},
-  ): Promise<WebhookRetryResult | WebhookRetryQueued> {
+  ): Promise<ApiResponse<WebhookRetryResult | WebhookRetryQueued>> {
     return this.http.request<WebhookRetryResult | WebhookRetryQueued>(
       `/sender/webhooks/${deliveryId}/retry`,
       {

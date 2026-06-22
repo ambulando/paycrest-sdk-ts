@@ -1,5 +1,6 @@
 import type { HttpClient } from "../http.js";
 import type {
+  ApiResponse,
   Currency,
   Institution,
   ListTokensParams,
@@ -19,7 +20,7 @@ export class GeneralResource {
    * Public exchange-rate quote. No API key required.
    * `GET /rates/{network}/{from}/{amount}/{to}`
    */
-  getRates(params: RateParams): Promise<RatesResponse> {
+  getRates(params: RateParams): Promise<ApiResponse<RatesResponse>> {
     const { network, from, amount, to, side, fromSource, toSource, providerId } =
       params;
     return this.http.request<RatesResponse>(
@@ -40,7 +41,7 @@ export class GeneralResource {
    * Live protocol orderbook plus network-wide aggregate stats.
    * No API key required. `GET /markets`
    */
-  getMarkets(): Promise<MarketsResponse> {
+  getMarkets(): Promise<ApiResponse<MarketsResponse>> {
     return this.http.request<MarketsResponse>("/markets", { auth: false });
   }
 
@@ -60,7 +61,7 @@ export class GeneralResource {
    * @param params.accountIdentifier Bank account number, mobile MSISDN, Till/Paybill ID, etc.
    * @param params.metadata          Optional; required for KES Till/Paybill.
    */
-  verifyAccount(params: VerifyAccountParams): Promise<string> {
+  verifyAccount(params: VerifyAccountParams): Promise<ApiResponse<string>> {
     return this.http.request<string>("/verify-account", {
       method: "POST",
       auth: false,
@@ -69,12 +70,14 @@ export class GeneralResource {
   }
 
   /** List supported fiat currencies. `GET /currencies` */
-  listCurrencies(): Promise<Currency[]> {
+  listCurrencies(): Promise<ApiResponse<Currency[]>> {
     return this.http.request<Currency[]>("/currencies", { auth: false });
   }
 
   /** List supported institutions for a currency. `GET /institutions/{currency_code}` */
-  listInstitutions(currencyCode: string): Promise<Institution[]> {
+  listInstitutions(
+    currencyCode: string,
+  ): Promise<ApiResponse<Institution[]>> {
     return this.http.request<Institution[]>(
       `/institutions/${currencyCode}`,
       { auth: false },
@@ -85,7 +88,7 @@ export class GeneralResource {
    * List supported tokens and their contract addresses. `GET /tokens`
    * Optionally filter by `network`.
    */
-  listTokens(params: ListTokensParams = {}): Promise<Token[]> {
+  listTokens(params: ListTokensParams = {}): Promise<ApiResponse<Token[]>> {
     return this.http.request<Token[]>("/tokens", {
       auth: false,
       query: { network: params.network },
@@ -93,7 +96,7 @@ export class GeneralResource {
   }
 
   /** Aggregator public key. `GET /pubkey` */
-  getPublicKey(): Promise<string> {
+  getPublicKey(): Promise<ApiResponse<string>> {
     return this.http.request<string>("/pubkey", { auth: false });
   }
 
@@ -104,7 +107,7 @@ export class GeneralResource {
   reindexTransaction(
     network: string,
     txHashOrAddress: string,
-  ): Promise<ReindexResponse> {
+  ): Promise<ApiResponse<ReindexResponse>> {
     return this.http.request<ReindexResponse>(
       `/reindex/${network}/${txHashOrAddress}`,
       { auth: false },

@@ -12,15 +12,18 @@ function mockFetch(status: number, body: unknown): typeof fetch {
 }
 
 describe("PaycrestClient", () => {
-  it("unwraps the data envelope on success", async () => {
+  it("returns the full ApiResponse envelope on success", async () => {
     const fetch = mockFetch(200, {
       status: "success",
       message: "ok",
-      data: { id: "order-1", status: "initiated" },
+      data: { id: "order-1", status: "initiated", createdAt: new Date("2026-06-22T08:19:15.228Z") },
     });
     const client = new PaycrestClient({ apiKey: "k", fetch });
-    const order = await client.sender.getOrder("order-1");
-    expect(order.id).toBe("order-1");
+    const res = await client.sender.getOrder("order-1");
+    expect(res.status).toBe("success");
+    expect(res.message).toBe("ok");
+    expect(res.data.id).toBe("order-1");
+    expect(res.data.createdAt.toISOString()).toEqual("2026-06-22T08:19:15.228Z")
   });
 
   it("sends the API-Key header on authed requests", async () => {
@@ -66,6 +69,6 @@ describe("PaycrestClient", () => {
       amount: "100",
       to: "NGN",
     });
-    expect(rates.sell?.rate).toBe("1500");
+    expect(rates.data.sell?.rate).toBe("1500");
   });
 });

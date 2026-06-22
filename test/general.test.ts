@@ -31,7 +31,7 @@ describe("general endpoints", () => {
       fromSource: "crypto",
       providerId: "ABCDEFGH",
     });
-    expect(rates.sell?.rate).toBe("1500");
+    expect(rates.data.sell?.rate).toBe("1500");
     const url = urlOf(fetch);
     expect(url).toContain("/rates/base/USDT/100/NGN");
     expect(url).toContain("side=sell");
@@ -50,8 +50,9 @@ describe("general endpoints", () => {
     );
     const client = new PaycrestClient({ fetch });
     const markets = await client.general.getMarkets();
-    expect(markets.book[0]!.providerId).toBe("p1");
-    expect(markets.aggregates.corridors).toBe(12);
+    expect(markets.data.book[0]!.providerId).toBe("p1");
+    expect(markets.data.aggregates.corridors).toBe(12);
+    expect(markets.data.asOf).toBeInstanceOf(Date);
     expect(urlOf(fetch)).toContain("/markets");
   });
 
@@ -59,7 +60,7 @@ describe("general endpoints", () => {
     const fetch = mockFetch(200, ok([{ code: "NGN", name: "Naira" }]));
     const client = new PaycrestClient({ fetch });
     const currencies = await client.general.listCurrencies();
-    expect(currencies[0]!.code).toBe("NGN");
+    expect(currencies.data[0]!.code).toBe("NGN");
   });
 
   it("listInstitutions interpolates the currency code", async () => {
@@ -80,7 +81,8 @@ describe("general endpoints", () => {
   it("getPublicKey returns the key string", async () => {
     const fetch = mockFetch(200, ok("-----BEGIN PUBLIC KEY-----"));
     const client = new PaycrestClient({ fetch });
-    expect(await client.general.getPublicKey()).toContain("PUBLIC KEY");
+    const res = await client.general.getPublicKey();
+    expect(res.data).toContain("PUBLIC KEY");
   });
 
   it("reindexTransaction interpolates network and identifier", async () => {

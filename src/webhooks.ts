@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { PaycrestSignatureError } from "./errors.js";
+import { parseJson } from "./json.js";
 import type { PaymentOrder } from "./types.js";
 
 /** Header carrying the HMAC-SHA256 signature on incoming webhooks. */
@@ -56,5 +57,5 @@ export function constructEvent(
   if (!verifySignature(rawBody, signature, secret)) {
     throw new PaycrestSignatureError();
   }
-  return JSON.parse(rawBody) as WebhookEvent;
+  return parseJson(rawBody) as WebhookEvent;
 }

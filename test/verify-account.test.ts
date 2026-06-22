@@ -19,11 +19,11 @@ describe("verifyAccount", () => {
       data: "JOHN DOE",
     });
     const client = new PaycrestClient({ fetch });
-    const name = await client.general.verifyAccount({
+    const res = await client.general.verifyAccount({
       institution: "GTBINGLA",
       accountIdentifier: "0123456789",
     });
-    expect(name).toBe("JOHN DOE");
+    expect(res.data).toBe("JOHN DOE");
   });
 
   it('returns "OK" when no name is available for the corridor', async () => {
@@ -33,12 +33,12 @@ describe("verifyAccount", () => {
       data: "OK",
     });
     const client = new PaycrestClient({ fetch });
-    const name = await client.general.verifyAccount({
+    const res = await client.general.verifyAccount({
       institution: "SAFAKEPC",
       accountIdentifier: "254700000000",
       metadata: { channel: "Till" },
     });
-    expect(name).toBe("OK");
+    expect(res.data).toBe("OK");
   });
 
   it("works without an API key (endpoint is unauthenticated)", async () => {

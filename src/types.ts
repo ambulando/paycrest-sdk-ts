@@ -54,6 +54,7 @@ export type OrderStatus =
 /** Bank/mobile-money account details (recipient or refund account). */
 export interface Recipient {
   institution: string;
+  institutionName?: string;
   accountIdentifier: string;
   accountName: string;
   memo?: string;
@@ -114,8 +115,8 @@ export interface ProviderAccount {
   accountName?: string;
   amountToTransfer?: string;
   currency?: string;
-  /** ISO-8601 timestamp after which the account is no longer valid. */
-  validUntil?: string;
+  /** Timestamp after which the account is no longer valid. */
+  validUntil?: Date;
 }
 
 /** Response from creating an order. Note: uses `timestamp`, not created/updated. */
@@ -123,16 +124,16 @@ export interface CreateOrderResponse {
   id: string;
   status: OrderStatus;
   orderType: PaymentOrderType;
-  timestamp: string;
+  timestamp: Date;
   amount: string;
   rate: string;
   senderFee: string;
   senderFeePercent: string;
   transactionFee: string;
   reference?: string;
-  providerAccount?: ProviderAccount;
-  source?: OrderEndpoint;
-  destination?: OrderEndpoint;
+  providerAccount: ProviderAccount;
+  source: OrderEndpoint;
+  destination: OrderEndpoint;
 }
 
 /** Canonical payment order, as returned by sender and provider list/get. */
@@ -141,8 +142,8 @@ export interface PaymentOrder {
   status: OrderStatus;
   orderType: PaymentOrderType;
   direction: OrderDirection;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   amount: string;
   amountInUsd: string;
   amountPaid: string;
@@ -193,7 +194,7 @@ export interface OrderSettlement {
 export interface OrderTxReceipt {
   status: string;
   txHash: string;
-  timestamp: string;
+  timestamp: Date;
 }
 
 export interface LockOrderStatus {
@@ -207,7 +208,7 @@ export interface LockOrderStatus {
   txHash: string;
   settlements: OrderSettlement[];
   txReceipts: OrderTxReceipt[];
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 // --- Webhook deliveries ---
@@ -233,9 +234,9 @@ export interface WebhookDeliverySummary {
   signature: string;
   errorMessage: string;
   durationMs: number;
-  nextRetryTime: string | null;
-  createdAt: string;
-  updatedAt: string;
+  nextRetryTime: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /** A single delivery record, including the frozen payload and response. */
@@ -402,8 +403,8 @@ export interface MarketBookEntry {
 }
 
 export interface MarketsResponse {
-  /** ISO-8601 generation timestamp. */
-  asOf: string;
+  /** Response generation timestamp. */
+  asOf: Date;
   aggregates: MarketAggregates;
   book: MarketBookEntry[];
 }

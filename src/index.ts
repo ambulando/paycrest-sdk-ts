@@ -4,6 +4,8 @@ export type { PaycrestClientOptions } from "./client.js";
 export { HttpClient } from "./http.js";
 export type { HttpClientOptions, RequestOptions } from "./http.js";
 
+export { parseJson, safeParseJson } from "./json.js";
+
 export { SenderResource } from "./resources/sender.js";
 export { ProviderResource } from "./resources/provider.js";
 export { GeneralResource } from "./resources/general.js";

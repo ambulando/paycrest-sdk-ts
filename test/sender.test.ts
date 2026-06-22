@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PaycrestClient } from "../src";
+import {request, response} from "./mock-data/create-order";
 
 function mockFetch(status: number, body: unknown): typeof fetch {
   return vi.fn(async () =>
@@ -25,27 +26,18 @@ describe("sender endpoints", () => {
   it("createOrder POSTs the body and returns the create response", async () => {
     const fetch = mockFetch(
       201,
-      ok({ id: "ord-1", status: "initiated", orderType: "regular" }),
+      ok(response),
     );
     const client = new PaycrestClient({ apiKey, fetch });
-    const res = await client.sender.createOrder({
-      amount: "100",
-      source: { type: "crypto", currency: "USDT", network: "base" },
-      destination: {
-        type: "fiat",
-        currency: "NGN",
-        recipient: {
-          institution: "GTBINGLA",
-          accountIdentifier: "0123456789",
-          accountName: "John Doe",
-        },
-      },
-    });
-    expect(res.id).toBe("ord-1");
+    const res = await client.sender.createOrder(request);
+    expect(res.data.id).toBe("0ed20b4c-b8ea-4342-a411-9724880f197a");
+    // Date holds millisecond precision; the wire value's nanoseconds are dropped.
+    expect(res.data.timestamp).toBeInstanceOf(Date);
+    expect(res.data.timestamp.toISOString()).toBe("2026-06-22T08:19:15.228Z");
     const [url, init] = callOf(fetch);
     expect(url).toContain("/sender/orders");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string).amount).toBe("100");
+    expect(JSON.parse(init.body as string).amount).toBe("0.5");
   });
 
   it("listOrders forwards status and direction", async () => {
@@ -71,7 +63,7 @@ describe("sender endpoints", () => {
     );
     const client = new PaycrestClient({ apiKey, fetch });
     const stats = await client.sender.getStats({ direction: "onramp" });
-    expect(stats.totalOrders).toBe(3);
+    expect(stats.data.totalOrders).toBe(3);
     expect(callOf(fetch)[0]).toContain("direction=onramp");
   });
 
@@ -79,7 +71,7 @@ describe("sender endpoints", () => {
     const fetch = mockFetch(200, ok({ orderId: "0xabc", status: "settled" }));
     const client = new PaycrestClient({ fetch });
     const status = await client.sender.getOrderStatusByGatewayId(8453, "0xabc");
-    expect(status.orderId).toBe("0xabc");
+    expect(status.data.orderId).toBe("0xabc");
     const [url, init] = callOf(fetch);
     expect(url).toContain("/orders/8453/0xabc");
     expect((init.headers as Record<string, string>)["API-Key"]).toBeUndefined();
@@ -110,7 +102,7 @@ describe("sender endpoints", () => {
     );
     const client = new PaycrestClient({ apiKey, fetch });
     const delivery = await client.sender.getWebhookDelivery("d1");
-    expect(delivery.responseBody).toBe("ok");
+    expect(delivery.data.responseBody).toBe("ok");
     expect(callOf(fetch)[0]).toContain("/sender/webhooks/d1");
   });
 
