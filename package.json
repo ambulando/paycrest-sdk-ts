@@ -29,7 +29,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "publish": "npm run build && npm login && npm publish"
+    "publish:patch": "npm run build && npm version patch && npm publish",
+    "publish:minor": "npm run build && npm version minor && npm publish"
   },
   "keywords": [
     "paycrest",
