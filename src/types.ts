@@ -67,26 +67,40 @@ export interface CryptoRecipient {
   network: string;
 }
 
-/** Source/destination leg of an order. */
-export interface OrderEndpoint {
-  type: OrderType;
-  /** 3-letter ISO currency code (fiat) or token symbol (crypto). */
+/** Crypto leg of an order (`type: "crypto"`). */
+export interface CryptoEndpoint {
+  type: "crypto";
+  /** Stablecoin symbol, e.g. "USDT", "USDC", "cNGN". */
   currency: string;
-  /** Blockchain network, e.g. "base", "polygon" (crypto legs). */
+  /** Blockchain network, e.g. "base", "polygon" (source / offramp leg). */
   network?: string;
-  /** ISO 3166-1 alpha-2 country code (fiat legs). */
-  country?: string;
-  /** Pin to a specific provider (destination legs). */
+  /** Pin to a specific provider (destination leg). */
   providerId?: string;
-  /** Recipient KYC data (fiat destination). */
-  kyc?: Record<string, unknown>;
-  /** Recipient details — fiat (bank/mobile) or crypto ({address, network}). */
-  recipient?: Recipient | CryptoRecipient;
-  /** Refund address (crypto source). */
+  /** Recipient address and network (onramp destination leg). */
+  recipient?: CryptoRecipient;
+  /** Refund address (offramp source leg). */
   refundAddress?: string;
-  /** Refund account (fiat source). */
+}
+
+/** Fiat leg of an order (`type: "fiat"`). */
+export interface FiatEndpoint {
+  type: "fiat";
+  /** 3-letter ISO currency code, e.g. "NGN", "KES", "BRL". */
+  currency: string;
+  /** ISO 3166-1 alpha-2 country code. */
+  country?: string;
+  /** Pin to a specific provider (destination leg). */
+  providerId?: string;
+  /** Recipient KYC data (offramp destination leg). */
+  kyc?: Record<string, unknown>;
+  /** Bank/mobile-money recipient (offramp destination leg). */
+  recipient?: Recipient;
+  /** Refund account (onramp source leg). */
   refundAccount?: Recipient;
 }
+
+/** Source/destination leg of an order, discriminated by `type`. */
+export type OrderEndpoint = CryptoEndpoint | FiatEndpoint;
 
 export interface CreateOrderParams {
   /** Payment quantity, as a decimal string. */
