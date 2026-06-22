@@ -28,7 +28,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "publish": "npm run build && npm login && npm publish"
   },
   "keywords": [
     "paycrest",
