@@ -67,48 +67,71 @@ export interface CryptoRecipient {
   network: string;
 }
 
-/** Crypto leg of an order (`type: "crypto"`). */
-export interface CryptoEndpoint {
+// --- Source legs (where funds come from) ---
+
+/** Crypto source — stablecoin deposit (offramp). */
+export interface CryptoSource {
   type: "crypto";
   /** Stablecoin symbol, e.g. "USDT", "USDC", "cNGN". */
   currency: string;
-  /** Blockchain network, e.g. "base", "polygon" (source / offramp leg). */
-  network?: string;
-  /** Pin to a specific provider (destination leg). */
-  providerId?: string;
-  /** Recipient address and network (onramp destination leg). */
-  recipient?: CryptoRecipient;
-  /** Refund address (offramp source leg). */
+  /** Blockchain network, e.g. "base", "polygon". */
+  network: string;
+  /** Address to refund to if the order is reverted. */
   refundAddress?: string;
 }
 
-/** Fiat leg of an order (`type: "fiat"`). */
-export interface FiatEndpoint {
+/** Fiat source — fiat payment (onramp). */
+export interface FiatSource {
   type: "fiat";
   /** 3-letter ISO currency code, e.g. "NGN", "KES", "BRL". */
   currency: string;
   /** ISO 3166-1 alpha-2 country code. */
   country?: string;
-  /** Pin to a specific provider (destination leg). */
-  providerId?: string;
-  /** Recipient KYC data (offramp destination leg). */
-  kyc?: Record<string, unknown>;
-  /** Bank/mobile-money recipient (offramp destination leg). */
-  recipient?: Recipient;
-  /** Refund account (onramp source leg). */
+  /** Account to refund to if the order is reverted. */
   refundAccount?: Recipient;
 }
 
-/** Source/destination leg of an order, discriminated by `type`. */
-export type OrderEndpoint = CryptoEndpoint | FiatEndpoint;
+/** Order source leg, discriminated by `type`. */
+export type OrderSource = CryptoSource | FiatSource;
+
+// --- Destination legs (where funds go) ---
+
+/** Crypto destination — stablecoin payout (onramp). */
+export interface CryptoDestination {
+  type: "crypto";
+  /** Stablecoin symbol, e.g. "USDT", "USDC", "cNGN". */
+  currency: string;
+  /** Pin to a specific provider. */
+  providerId?: string;
+  /** Recipient address and network. */
+  recipient: CryptoRecipient;
+}
+
+/** Fiat destination — bank/mobile-money payout (offramp). */
+export interface FiatDestination {
+  type: "fiat";
+  /** 3-letter ISO currency code, e.g. "NGN", "KES", "BRL". */
+  currency: string;
+  /** ISO 3166-1 alpha-2 country code. */
+  country?: string;
+  /** Pin to a specific provider. */
+  providerId?: string;
+  /** Recipient KYC data. */
+  kyc?: Record<string, unknown>;
+  /** Bank/mobile-money recipient. */
+  recipient: Recipient;
+}
+
+/** Order destination leg, discriminated by `type`. */
+export type OrderDestination = CryptoDestination | FiatDestination;
 
 export interface CreateOrderParams {
   /** Payment quantity, as a decimal string. */
   amount: string;
   /** Whether `amount` is denominated in crypto (default) or fiat. */
   amountIn?: AmountIn;
-  source: OrderEndpoint;
-  destination: OrderEndpoint;
+  source: OrderSource;
+  destination: OrderDestination;
   /** Exchange rate (fiat per crypto token), as a decimal string. */
   rate?: string;
   /** Fixed sender fee in crypto units, as a decimal string. */
@@ -146,8 +169,8 @@ export interface CreateOrderResponse {
   transactionFee: string;
   reference?: string;
   providerAccount: ProviderAccount;
-  source: OrderEndpoint;
-  destination: OrderEndpoint;
+  source: OrderSource;
+  destination: OrderDestination;
 }
 
 /** Canonical payment order, as returned by sender and provider list/get. */
@@ -170,8 +193,8 @@ export interface PaymentOrder {
   reference?: string;
   txHash?: string;
   providerAccount?: ProviderAccount;
-  source?: OrderEndpoint;
-  destination?: OrderEndpoint;
+  source?: OrderSource;
+  destination?: OrderDestination;
 }
 
 export interface ListOrdersParams extends Pagination {
